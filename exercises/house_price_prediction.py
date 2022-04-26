@@ -1,13 +1,11 @@
-from IMLearn.utils import split_train_test
-from IMLearn.learners.regressors import LinearRegression
-
 from typing import NoReturn
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-import plotly.io as pio
-pio.templates.default = "simple_white"
+
+from IMLearn.learners.regressors import LinearRegression
+from IMLearn.utils import split_train_test
 
 
 def load_data(filename: str):
@@ -23,7 +21,16 @@ def load_data(filename: str):
     Design matrix and response vector (prices) - either as a single
     DataFrame or a Tuple[DataFrame, Series]
     """
-    raise NotImplementedError()
+    df = pd.read_csv(filename)
+    df = df.loc[df.price > 0]
+    df = df.loc[df.sqft_lot15 > 0]
+    df = df.loc[df.zipcode != 0]
+    df.loc[df.yr_renovated == 0, 'yr_renovated'] = df.yr_built
+    df = df.reset_index()
+    prices = df.price
+    df = pd.concat([df, pd.get_dummies(df.zipcode)], axis=1)
+    df = df.drop(['id', 'date', 'zipcode', 'lat', 'long', 'price'], axis=1)
+    return df, prices
 
 
 def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") -> NoReturn:
@@ -43,19 +50,27 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
     output_path: str (default ".")
         Path to folder in which plots are saved
     """
-    raise NotImplementedError()
+    for feature in X.columns:
+        pearson_correlation = X[feature].cov(y) / (y.std() * X[feature].std())
+        plt.scatter(X[feature], y, s=0.4, c='r')
+        plt.title(
+            f'Response as a Function of {feature}\n pearson correlation between them: {round(pearson_correlation, 3)}\n')
+        plt.xlabel(feature)
+        plt.ylabel('response')
+        plt.savefig(f'{output_path}/{feature}.png', bbox_inches='tight')
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
-    raise NotImplementedError()
+    # load_data('../datasets/house_prices.csv')
+    X, y = load_data('../datasets/house_prices.csv')
 
     # Question 2 - Feature evaluation with respect to response
-    raise NotImplementedError()
+    feature_evaluation(X, y, './feature_graphs')
 
     # Question 3 - Split samples into training- and testing sets.
-    raise NotImplementedError()
+    X_train, y_train, X_test, y_test = split_train_test(X, y)
 
     # Question 4 - Fit model over increasing percentages of the overall training data
     # For every percentage p in 10%, 11%, ..., 100%, repeat the following 10 times:
@@ -64,4 +79,26 @@ if __name__ == '__main__':
     #   3) Test fitted model over test set
     #   4) Store average and variance of loss over test set
     # Then plot average loss as function of training size with error ribbon of size (mean-2*std, mean+2*std)
-    raise NotImplementedError()
+    n_samples_train = X_train.shape[0]
+    regressor = LinearRegression()
+    percentages = range(10, 100, 1)
+    losses = []
+    stds = []
+    for p in percentages:
+        p = p / 100
+        inner_losses = np.zeros(10)
+        print(p)
+        for i in range(10):
+            randstate = np.random.randint(0, 100000)
+            sample = X_train.sample(frac=p, random_state=randstate)
+            sample_response = y_train.sample(frac=p, random_state=randstate)
+            regressor.fit(sample.to_numpy(), sample_response.to_numpy())
+            inner_losses[i] = regressor.loss(X_test.to_numpy(), y_test.to_numpy())
+        losses.append(inner_losses.mean())
+        stds.append(inner_losses.std())
+
+    losses = np.array(losses)
+    ci = 2 * np.array(stds)
+    plt.plot(percentages, losses)
+    plt.fill_between(percentages, (losses - ci), (losses + ci), color='blue', alpha=0.1)
+    plt.show()
