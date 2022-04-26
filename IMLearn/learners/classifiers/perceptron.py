@@ -104,10 +104,10 @@ class Perceptron(BaseEstimator):
             neg_inedx = np.argmax(deciding_vec)
             if deciding_vec[0] == 1 or neg_inedx > 0:
                 self.coefs_ = self.coefs_ + y[neg_inedx] * X[neg_inedx]
+                self.fitted_ = True
                 self.callback_(self, X[neg_inedx], y[neg_inedx])
             else:
                 break
-            self.fitted_ = True
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """

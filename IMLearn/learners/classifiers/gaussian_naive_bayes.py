@@ -89,7 +89,8 @@ class GaussianNaiveBayes(BaseEstimator):
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
 
-        raise NotImplementedError()
+        return np.log(self.pi_) - np.log(2 * np.pi) / 2 - np.log(self.vars_ ** 2).sum(axis=1) - (
+                (X[:, None] - self.mu_) ** 2 / (2 * self.vars_ ** 2)).sum(axis=2)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -109,4 +110,4 @@ class GaussianNaiveBayes(BaseEstimator):
             Performance under missclassification loss function
         """
         from ...metrics import misclassification_error
-        raise NotImplementedError()
+        return misclassification_error(y, self.predict(X))

@@ -77,7 +77,7 @@ class LDA(BaseEstimator):
             Predicted responses of given samples
         """
         return self.classes_[np.argmax(np.log(self.pi_) + (X @ self._cov_inv @ self.mu_.T) - \
-                                       (self.mu_ @ self._cov_inv @ self.mu_.T).diagonal() / 2)]
+                                       (self.mu_ @ self._cov_inv @ self.mu_.T).diagonal() / 2, axis=1)]
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """
