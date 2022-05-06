@@ -76,8 +76,7 @@ class LDA(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        return self.classes_[np.argmax(np.log(self.pi_) + (X @ self._cov_inv @ self.mu_.T) - \
-                                       (self.mu_ @ self._cov_inv @ self.mu_.T).diagonal() / 2, axis=1)]
+        return self.classes_[np.argmax(self.likelihood(X), axis=1)]
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """
@@ -97,7 +96,9 @@ class LDA(BaseEstimator):
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
 
-        return np.log(self.pi_) + (X @ self._cov_inv @ self.mu_.T) - (self.mu_ @ self._cov_inv @ self.mu_.T) / 2
+        return np.log(self.pi_) + (X @ self._cov_inv @ self.mu_.T) - 0.5 * (
+                self.mu_ @ self._cov_inv @ self.mu_.T).diagonal() - X.shape[0] * np.log(2 * np.pi) / 2 - np.log(
+            np.linalg.det(self.cov_))
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
