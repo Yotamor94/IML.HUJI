@@ -1,7 +1,9 @@
 from __future__ import annotations
-from copy import deepcopy
+
 from typing import Tuple, Callable
+
 import numpy as np
+
 from IMLearn import BaseEstimator
 
 
@@ -15,7 +17,7 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
     estimator: BaseEstimator
         Initialized estimator to use for fitting the data
 
-    X: ndarray of shape (n_samples, n_features)
+    X: ndarray of shape (n_samples, n_samples)
        Input data to fit
 
     y: ndarray of shape (n_samples, )
@@ -37,4 +39,16 @@ def cross_validate(estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
     validation_score: float
         Average validation score over folds
     """
-    raise NotImplementedError()
+    n_samples = X.shape[0]
+    test_size = int(np.ceil((1 / cv) * n_samples))
+    train_results = np.zeros(cv)
+    test_results = np.zeros(cv)
+    for iter in range(cv):
+        train_X = np.concatenate([X[0: iter * test_size], X[test_size * (iter + 1): n_samples]], 0)
+        train_y = np.concatenate([y[0: iter * test_size], y[test_size * (iter + 1): n_samples]], 0)
+        test_X = X[iter * test_size: (iter + 1) * test_size]
+        test_y = y[iter * test_size: (iter + 1) * test_size]
+        estimator.fit(train_X, train_y)
+        train_results[iter] = scoring(estimator.predict(train_X), train_y)
+        test_results[iter] = scoring(estimator.predict(test_X), test_y)
+    return train_results.mean(), test_results.mean()
