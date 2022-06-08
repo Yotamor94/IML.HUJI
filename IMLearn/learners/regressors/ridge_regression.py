@@ -65,6 +65,7 @@ class RidgeRegression(BaseEstimator):
         n_samples, n_features = X.shape
         if self.include_intercept_:
             X = np.concatenate([[[1]] * X.shape[0], X], axis=1)
+            n_features += 1
         self.coefs_ = np.matmul(np.matmul(np.linalg.inv(np.matmul(X.T, X) + self.lam_ * np.identity(n_features)), X.T),
                                 y)
 

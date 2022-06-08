@@ -48,7 +48,8 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     train_results, val_results = np.zeros(11), np.zeros(11)
     degrees = list(range(11))
     for degree in degrees:
-        train_results[degree], val_results[degree] = cross_validate(PolynomialFitting(degree), train_x, train_y, mean_square_error)
+        train_results[degree], val_results[degree] = cross_validate(PolynomialFitting(degree), train_x, train_y,
+                                                                    mean_square_error)
 
     trace_train_scores = go.Scatter(x=degrees, y=train_results, name="Train MSE")
     trace_val_scores = go.Scatter(x=degrees, y=val_results, name="Validation MSE")
@@ -61,9 +62,8 @@ def select_polynomial_degree(n_samples: int = 100, noise: float = 5):
     polyfit = PolynomialFitting(best_k)
     polyfit.fit(train_x, train_y)
     print("Best k =", best_k)
-    print("Test Error =", np.round(mean_square_error(val_y, polyfit.predict(val_x)), 2), "Validation Error =", val_results[best_k])
-
-
+    print("Test Error =", np.round(mean_square_error(val_y, polyfit.predict(val_x)), 2), "Validation Error =",
+          val_results[best_k])
 
 
 def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 500):
@@ -80,17 +80,51 @@ def select_regularization_parameter(n_samples: int = 50, n_evaluations: int = 50
         Number of regularization parameter values to evaluate for each of the algorithms
     """
     # Question 6 - Load diabetes dataset and split into training and testing portions
-    raise NotImplementedError()
+    X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)
+    train_x, train_y, test_x, test_y = split_train_test(X, y, 50 / 442)
+    train_x = train_x.to_numpy()
+    train_y = train_y.to_numpy()
+    test_x = test_x.to_numpy()
+    test_y = test_y.to_numpy()
 
     # Question 7 - Perform CV for different values of the regularization parameter for Ridge and Lasso regressions
-    raise NotImplementedError()
+    ridge_train_results, ridge_val_results = np.zeros(n_evaluations), np.zeros(n_evaluations)
+    lasso_train_results, lasso_val_results = np.zeros(n_evaluations), np.zeros(n_evaluations)
+    lambdas = np.linspace(0.012, 1, n_evaluations)
+    print(train_x.shape)
+    for i, lam in enumerate(lambdas):
+        ridge_train_results[i], ridge_val_results[i] = cross_validate(RidgeRegression(lam), train_x, train_y,
+                                                                      mean_square_error)
+        lasso_train_results[i], lasso_val_results[i] = cross_validate(Lasso(lam), train_x, train_y, mean_square_error)
+
+    ridge_trace_train_scores = go.Scatter(x=lambdas, y=ridge_train_results, name="Ridge RegressionTrain MSE")
+    lasso_trace_train_scores = go.Scatter(x=lambdas, y=lasso_train_results, name="Lasso Regression Train MSE")
+    ridge_trace_val_scores = go.Scatter(x=lambdas, y=ridge_val_results, name="Ridge Regression Validation MSE")
+    lasso_trace_val_scores = go.Scatter(x=lambdas, y=lasso_val_results, name="Lasso Regression Validation MSE")
+    layout = go.Layout(title="MSE as a Function of lambda", xaxis=dict(title="lambda"), yaxis=dict(title="MSE"))
+    fig = go.Figure(
+        [ridge_trace_train_scores, ridge_trace_val_scores, lasso_trace_train_scores, lasso_trace_val_scores], layout)
+    fig.show()
 
     # Question 8 - Compare best Ridge model, best Lasso model and Least Squares model
-    raise NotImplementedError()
-
+    best_lam_ridge = lambdas[ridge_val_results.argmin()]
+    best_lam_lasso = lambdas[lasso_val_results.argmin()]
+    ridge = RidgeRegression(best_lam_ridge)
+    lasso = Lasso(best_lam_lasso)
+    ls = LinearRegression()
+    ridge.fit(train_x, train_y)
+    lasso.fit(train_x, train_y)
+    ls.fit(train_x, train_y)
+    print("Best lambda for Ridge =", best_lam_ridge)
+    print("Best lambda for Lasso =", best_lam_lasso)
+    print("Ridge Test Error =", np.round(mean_square_error(test_y, ridge.predict(test_x)), 2), "Validation Error =", np.round(ridge_val_results.min(initial=100000), 2))
+    print("Lasso Test Error =", np.round(mean_square_error(test_y, lasso.predict(test_x)), 2), "Validation Error =", np.round(lasso_val_results.min(initial=100000), 2))
+    print("Least Squares Test Error =", np.round(mean_square_error(test_y, ls.predict(test_x)), 2))
 
 if __name__ == '__main__':
     np.random.seed(0)
-    select_polynomial_degree()
+    # select_polynomial_degree()
     select_polynomial_degree(noise=0)
-    select_polynomial_degree(1500, 10)
+    # select_polynomial_degree(1500, 10)
+    np.random.seed(0)
+    # select_regularization_parameter()
